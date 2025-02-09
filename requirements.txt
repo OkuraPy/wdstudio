@@ -1,0 +1,7 @@
+PyQt6>=6.4.0
+pydub>=0.25.1
+
+Pillow>=9.0.0
+requests>=2.28.0
+SpeechRecognition>=3.8.1
+python-dotenv>=0.19.0
