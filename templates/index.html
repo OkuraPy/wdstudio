@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebDark Studio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Barra lateral (menu) -->
+        <div class="sidebar">
+            <h1 class="logo">WebDark Studio</h1>
+            
+            <!-- Ferramentas de Vídeo -->
+            <div class="tool-category">
+                <h2>Ferramentas de Vídeo</h2>
+                <div class="tool-buttons">
+                    <button onclick="showTool('pexels')" class="tool-button">Baixar do Pexels</button>
+                    <button onclick="showTool('video-cutter')" class="tool-button">Cortar Vídeos</button>
+                </div>
+            </div>
+
+            <!-- Ferramentas de Áudio -->
+            <div class="tool-category">
+                <h2>Ferramentas de Áudio</h2>
+                <div class="tool-buttons">
+                    <button onclick="showTool('silence-remover')" class="tool-button">Remover Silêncio</button>
+                    <button onclick="showTool('subtitle-generator')" class="tool-button">Gerar Legendas</button>
+                </div>
+            </div>
+
+            <!-- Ferramentas de Imagem -->
+            <div class="tool-category">
+                <h2>Ferramentas de Imagem</h2>
+                <div class="tool-buttons">
+                    <button onclick="showTool('image-converter')" class="tool-button">Converter Formato</button>
+                    <button onclick="showTool('file-manager')" class="tool-button">Gerenciar Arquivos</button>
+                </div>
+            </div>
+
+            <!-- Ferramentas de Organização -->
+            <div class="tool-category">
+                <h2>Ferramentas de Organização</h2>
+                <div class="tool-buttons">
+                    <button onclick="showTool('folder-creator')" class="tool-button">Criar Estrutura</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de conteúdo -->
+        <div class="content">
+            <!-- Baixar do Pexels -->
+            <div id="pexels" class="tool-content">
+                <h2>Baixar Vídeos do Pexels</h2>
+                <form id="pexels-form" onsubmit="downloadPexelsVideos(event)">
+                    <div class="form-group">
+                        <label for="query">Termo de Busca:</label>
+                        <input type="text" id="query" name="query" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="path">Pasta de Download:</label>
+                        <div class="path-input">
+                            <input type="text" id="path" name="path" required>
+                            <button type="button" onclick="choosePath('path')">Escolher</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="limit-videos" onchange="toggleLimitInput()"> 
+                            Limitar quantidade de vídeos
+                        </label>
+                        <div id="limit-container" style="display: none;">
+                            <input type="number" id="video-limit" name="limit" min="1" value="10">
+                        </div>
+                    </div>
+                    <div class="progress-container" id="progress-container" style="display: none;">
+                        <div class="progress">
+                            <div id="download-progress" class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        <div id="progress-message" class="text-center mt-2">Iniciando download...</div>
+                    </div>
+                    <button type="submit" class="submit-button" id="download-button">Baixar Vídeos</button>
+                </form>
+            </div>
+
+            <!-- Cortar Vídeos -->
+            <div id="video-cutter" class="tool-content" style="display: none;">
+                <h2>Cortar Vídeos</h2>
+                <form action="/cut-video" method="POST">
+                    <div class="form-group">
+                        <label for="video-path">Pasta dos Vídeos:</label>
+                        <div class="path-input">
+                            <input type="text" id="video-path" name="path" required>
+                            <button type="button" onclick="choosePath('video-path')">Escolher</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="duration">Duração (segundos):</label>
+                        <input type="number" id="duration" name="duration" value="10" required>
+                    </div>
+                    <button type="submit" class="submit-button">Cortar Vídeos</button>
+                </form>
+            </div>
+
+            <!-- Remover Silêncio -->
+            <div id="silence-remover" class="tool-content" style="display: none;">
+                <h2>Remover Silêncio</h2>
+                <form action="/remove-silence" method="POST">
+                    <div class="form-group">
+                        <label for="audio-file">Arquivo de Áudio:</label>
+                        <div class="path-input">
+                            <input type="text" id="audio-file" name="file" required>
+                            <button type="button" onclick="choosePath('audio-file')">Escolher</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-button">Remover Silêncio</button>
+                </form>
+            </div>
+
+            <!-- Gerar Legendas -->
+            <div id="subtitle-generator" class="tool-content" style="display: none;">
+                <h2>Gerar Legendas</h2>
+                <form action="/generate-subtitles" method="POST">
+                    <div class="form-group">
+                        <label for="video-file">Arquivo de Vídeo:</label>
+                        <div class="path-input">
+                            <input type="text" id="video-file" name="video" required>
+                            <button type="button" onclick="choosePath('video-file')">Escolher</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-button">Gerar Legendas</button>
+                </form>
+            </div>
+
+            <!-- Converter Formato -->
+            <div id="image-converter" class="tool-content" style="display: none;">
+                <h2>Converter Formato de Imagens</h2>
+                <form action="/convert-images" method="POST">
+                    <div class="form-group">
+                        <label for="source">Pasta de Origem:</label>
+                        <div class="path-input">
+                            <input type="text" id="source" name="source" required>
+                            <button type="button" onclick="choosePath('source')">Escolher</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="target">Pasta de Destino:</label>
+                        <div class="path-input">
+                            <input type="text" id="target" name="target" required>
+                            <button type="button" onclick="choosePath('target')">Escolher</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-button">Converter Imagens</button>
+                </form>
+            </div>
+
+            <!-- Criar Estrutura -->
+            <div id="folder-creator" class="tool-content" style="display: none;">
+                <h2>Criar Estrutura de Pastas</h2>
+                <form action="/create-folders" method="POST">
+                    <div class="form-group">
+                        <label for="folder-path">Pasta Base:</label>
+                        <div class="path-input">
+                            <input type="text" id="folder-path" name="path" required>
+                            <button type="button" onclick="choosePath('folder-path')">Escolher</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-button">Criar Estrutura</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTool(toolId) {
+            // Esconde todas as ferramentas
+            document.querySelectorAll('.tool-content').forEach(tool => {
+                tool.style.display = 'none';
+            });
+            
+            // Mostra a ferramenta selecionada
+            document.getElementById(toolId).style.display = 'block';
+        }
+
+        function toggleLimitInput() {
+            const limitContainer = document.getElementById('limit-container');
+            const checkbox = document.getElementById('limit-videos');
+            limitContainer.style.display = checkbox.checked ? 'block' : 'none';
+        }
+
+        // Variável para controlar o intervalo de progresso
+        let progressInterval = null;
+
+        // Função para atualizar o progresso
+        function updateProgress(current, total, message) {
+            const progressBar = document.getElementById('download-progress');
+            const progressContainer = document.getElementById('progress-container');
+            const progressMessage = document.getElementById('progress-message');
+            
+            // Calcula a porcentagem
+            const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
+            
+            // Atualiza a barra de progresso
+            progressBar.style.width = percentage + '%';
+            progressBar.setAttribute('aria-valuenow', percentage);
+            progressBar.textContent = percentage + '%';
+            
+            // Atualiza a mensagem
+            progressMessage.textContent = message;
+            
+            // Mostra o container de progresso
+            progressContainer.style.display = 'block';
+            
+            // Se o download terminou, para de verificar o progresso
+            if (current === total && total > 0) {
+                clearInterval(progressInterval);
+                // Adiciona a classe de sucesso
+                progressBar.classList.remove('bg-info');
+                progressBar.classList.add('bg-success');
+                
+                // Agenda o reset da barra de progresso após 3 segundos
+                setTimeout(resetProgress, 3000);
+            }
+        }
+
+        // Função para resetar a barra de progresso
+        function resetProgress() {
+            const progressBar = document.getElementById('download-progress');
+            const progressContainer = document.getElementById('progress-container');
+            const progressMessage = document.getElementById('progress-message');
+            
+            // Reseta a barra de progresso
+            progressBar.style.width = '0%';
+            progressBar.setAttribute('aria-valuenow', 0);
+            progressBar.textContent = '0%';
+            progressBar.classList.remove('bg-success');
+            progressBar.classList.add('bg-info');
+            
+            // Esconde o container de progresso
+            progressContainer.style.display = 'none';
+            progressMessage.textContent = '';
+            
+            // Limpa o intervalo de verificação
+            clearInterval(progressInterval);
+            progressInterval = null;
+        }
+
+        // Função para verificar o progresso
+        function checkProgress() {
+            fetch('/download-progress')
+                .then(response => response.json())
+                .then(data => {
+                    updateProgress(data.current, data.total, data.message);
+                })
+                .catch(error => {
+                    console.error('Erro ao verificar progresso:', error);
+                });
+        }
+
+        async function downloadPexelsVideos(event) {
+            event.preventDefault();
+
+            // Reseta e mostra a barra de progresso
+            const progressBar = document.getElementById('download-progress');
+            progressBar.style.width = '0%';
+            progressBar.setAttribute('aria-valuenow', 0);
+            progressBar.textContent = '0%';
+            progressBar.classList.remove('bg-success');
+            progressBar.classList.add('bg-info');
+            document.getElementById('progress-container').style.display = 'block';
+            document.getElementById('progress-message').textContent = 'Iniciando download...';
+            
+            // Inicia a verificação de progresso
+            clearInterval(progressInterval);
+            progressInterval = setInterval(checkProgress, 500);
+
+            const query = document.getElementById('query').value;
+            const path = document.getElementById('path').value;
+            const limitEnabled = document.getElementById('limit-videos').checked;
+            const limit = limitEnabled ? document.getElementById('video-limit').value : null;
+
+            if (!query || !path) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+
+            // Mostra a barra de progresso
+            const progressContainer = document.getElementById('progress-container');
+            progressContainer.style.display = 'block';
+            updateProgress(0, 100);
+
+            // Desabilita o botão durante o download
+            const downloadButton = document.getElementById('download-button');
+            downloadButton.disabled = true;
+            downloadButton.textContent = 'Baixando...';
+
+            try {
+                const formData = new FormData();
+                formData.append('query', query);
+                formData.append('path', path);
+                if (limitEnabled) {
+                    formData.append('limit', limit);
+                }
+
+                const response = await fetch('/download-video', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Mostra a mensagem de sucesso com os detalhes
+                    const message = data.message || 'Vídeos baixados com sucesso!';
+                    alert(message);
+                    
+                    // Limpa os campos do formulário
+                    document.getElementById('query').value = '';
+                    document.getElementById('limit-videos').checked = false;
+                    document.getElementById('video-limit').value = '10';
+                    document.getElementById('limit-container').style.display = 'none';
+                } else {
+                    throw new Error(data.error || 'Erro ao baixar vídeos');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                alert('Erro ao baixar vídeos: ' + error.message);
+                // Em caso de erro, reseta a barra de progresso
+                resetProgress();
+            } finally {
+                // Reabilita o botão
+                downloadButton.disabled = false;
+                downloadButton.textContent = 'Baixar Vídeos';
+            }
+        }
+
+        async function choosePath(inputId) {
+            console.log('Selecionando pasta para:', inputId);
+            try {
+                const result = await pywebview.api.choose_folder();
+                console.log('Pasta selecionada:', result);
+                if (result) {
+                    document.getElementById(inputId).value = result;
+                }
+            } catch (error) {
+                console.error('Erro ao selecionar pasta:', error);
+                alert('Erro ao selecionar pasta: ' + error);
+            }
+        }
+
+        // Mostra a primeira ferramenta por padrão
+        document.addEventListener('DOMContentLoaded', () => {
+            showTool('pexels');
+        });
+    </script>
+</body>
+</html>
