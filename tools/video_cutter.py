@@ -14,14 +14,8 @@ class VideoCutter(QWidget):
         super().__init__()
         self.input_file = None
         self.output_dir = None
-        self.setup_ui()
-
-class VideoCutter(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.input_file = None
-        self.output_dir = None
         self.processor = None
+        self.ffprobe_path = '/opt/homebrew/bin/ffprobe'
         
         # Verifica se o FFmpeg está instalado
         if not self.check_ffmpeg():
@@ -252,7 +246,7 @@ class VideoCutter(QWidget):
         try:
             # Obtém informações do vídeo usando ffprobe
             result = subprocess.run(
-                ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', self.input_file],
+                [self.ffprobe_path, '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', self.input_file],
                 capture_output=True,
                 text=True
             )

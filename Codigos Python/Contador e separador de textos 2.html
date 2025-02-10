@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divisor de Texto</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f7f6;
+        }
+        textarea {
+            width: 100%;
+            height: 300px; /* Aumentei a altura da janela de texto */
+            margin-bottom: 10px;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            resize: none;
+            box-sizing: border-box;
+        }
+        input, button, select {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .result {
+            margin-top: 20px;
+        }
+        .chunk {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+        .copy-button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .char-count-container {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .char-count-container p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .char-count-container .count-detail {
+            color: #666;
+        }
+        #pasteArea {
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+        }
+        #videoTimeEstimate {
+            font-weight: bold;
+            margin-top: 10px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Divisor de Texto</h1>
+    <textarea id="fullText" placeholder="Insira o texto completo aqui..." oninput="updateCharCount(this.value)"></textarea>
+    <input type="number" id="charLimit" value="3000" min="1">
+    
+    <div class="button-container">
+        <button onclick="divideText()">Dividir Texto</button>
+        <button onclick="clearText()">Limpar Texto</button>
+        <button onclick="handlePaste()">Colar Texto</button>
+    </div>
+    
+    <div id="charCountContainer" class="char-count-container">
+        <p>Contagem de Caracteres:</p>
+        <p class="count-detail">Com espaços: <span id="charCountWithSpaces">0</span></p>
+        <p class="count-detail">Sem espaços: <span id="charCountNoSpaces">0</span></p>
+        <p class="count-detail">Palavras: <span id="wordCount">0</span></p>
+        <p class="count-detail">Parágrafos: <span id="paragraphCount">0</span></p>
+    </div>
+    
+    <div id="result" class="result"></div>
+    
+    <label for="readingMode">Escolha o modo de leitura:</label>
+    <select id="readingMode" onchange="estimateVideoTime()">
+        <option value="normal">Normal</option>
+        <option value="fast">Rápido</option>
+        <option value="slow">Pausado</option>
+    </select>
+    <div id="videoTimeEstimate">Estimativa de Tempo de Vídeo: 0 minutos</div>
+
+    <textarea id="pasteArea" aria-hidden="true"></textarea>
+
+    <script>
+        function handlePaste() {
+            const pasteArea = document.getElementById('pasteArea');
+            const fullText = document.getElementById('fullText');
+            pasteArea.value = '';
+            pasteArea.focus();
+            document.execCommand('paste');
+            setTimeout(() => {
+                if (pasteArea.value) {
+                    fullText.value = pasteArea.value;
+                    updateCharCount(pasteArea.value);
+                } else {
+                    tryClipboardAPI();
+                }
+            }, 100);
+        }
+
+        function tryClipboardAPI() {
+            const fullText = document.getElementById('fullText');
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.readText().then(text => {
+                    fullText.value = text;
+                    updateCharCount(text);
+                }).catch(() => {
+                    fullText.placeholder = 'Use Ctrl+V para colar o texto';
+                    fullText.focus();
+                });
+            } else {
+                fullText.placeholder = 'Use Ctrl+V para colar o texto';
+                fullText.focus();
+            }
+        }
+
+        document.getElementById('fullText').addEventListener('paste', function() {
+            setTimeout(() => {
+                updateCharCount(this.value);
+            }, 0);
+        });
+
+        function updateCharCount(text) {
+            const totalChars = text.length;
+            const charsNoSpaces = text.replace(/\s/g, '').length;
+            const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+            const wordCount = words.length || 0;
+            const paragraphs = text.split('\n').filter(para => para.trim().length > 0);
+            const paragraphCount = paragraphs.length;
+
+            document.getElementById('charCountWithSpaces').textContent = totalChars;
+            document.getElementById('charCountNoSpaces').textContent = charsNoSpaces;
+            document.getElementById('wordCount').textContent = wordCount;
+            document.getElementById('paragraphCount').textContent = paragraphCount;
+
+            estimateVideoTime();
+        }
+
+        function divideText() {
+            const fullText = document.getElementById('fullText').value;
+            const charLimit = parseInt(document.getElementById('charLimit').value);
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+
+            const paragraphs = fullText.split('\n');
+            let currentChunk = '';
+            let chunks = [];
+
+            for (let paragraph of paragraphs) {
+                if ((currentChunk + paragraph).length > charLimit) {
+                    if (currentChunk) {
+                        chunks.push(currentChunk.trim());
+                        currentChunk = '';
+                    }
+                    if (paragraph.length > charLimit) {
+                        const words = paragraph.split(' ');
+                        let tempChunk = '';
+                        for (let word of words) {
+                            if ((tempChunk + word).length > charLimit) {
+                                chunks.push(tempChunk.trim());
+                                tempChunk = word + ' ';
+                            } else {
+                                tempChunk += word + ' ';
+                            }
+                        }
+                        if (tempChunk) currentChunk = tempChunk;
+                    } else {
+                        currentChunk = paragraph + '\n';
+                    }
+                } else {
+                    currentChunk += paragraph + '\n';
+                }
+            }
+
+            if (currentChunk) chunks.push(currentChunk.trim());
+
+            chunks.forEach((chunk, index) => {
+                const chunkDiv = document.createElement('div');
+                chunkDiv.className = 'chunk';
+                chunkDiv.innerHTML = `
+                    <h3>Parte ${index + 1}</h3>
+                    <p>${chunk}</p>
+                    <button class="copy-button" onclick="copyText(this)">Copiar Texto</button>
+                `;
+                resultDiv.appendChild(chunkDiv);
+            });
+
+            estimateVideoTime();
+        }
+
+        function estimateVideoTime() {
+            const text = document.getElementById('fullText').value;
+            const charCount = text.length;
+            const readingMode = document.getElementById('readingMode').value;
+
+            let charactersPerMinute;
+            switch (readingMode) {
+                case 'fast':
+                    charactersPerMinute = 957.85;
+                    break;
+                case 'slow':
+                    charactersPerMinute = 702.24;
+                    break;
+                default:
+                    charactersPerMinute = 813.49;
+                    break;
+            }
+
+            const minutes = Math.ceil(charCount / charactersPerMinute);
+            document.getElementById('videoTimeEstimate').textContent = `Estimativa de Tempo de Vídeo: ${minutes} minutos`;
+        }
+
+        function clearText() {
+            document.getElementById('fullText').value = '';
+            document.getElementById('result').innerHTML = '';
+            updateCharCount('');
+            document.getElementById('videoTimeEstimate').textContent = 'Estimativa de Tempo de Vídeo: 0 minutos';
+        }
+
+        function copyText(button) {
+            const textToCopy = button.previousElementSibling.textContent;
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    updateButtonText(button);
+                }).catch(() => {
+                    fallbackCopyTextToClipboard(textToCopy, button);
+                });
+            } else {
+                fallbackCopyTextToClipboard(textToCopy, button);
+            }
+        }
+
+        function fallbackCopyTextToClipboard(text, button) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+
+            document.body.appendChild(textArea);
+            textArea.select();
+
+            try {
+                document.execCommand('copy');
+                updateButtonText(button);
+            } catch (err) {
+                console.error('Erro ao copiar o texto: ', err);
+            }
+
+            document.body.removeChild(textArea);
+        }
+
+        function updateButtonText(button) {
+            button.textContent = 'Texto Copiado!';
+            setTimeout(() => {
+                button.textContent = 'Copiar Texto';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
+

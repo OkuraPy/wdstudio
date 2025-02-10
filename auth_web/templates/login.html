@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebDark Studio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="auth-box">
+            <h1>WebDark</h1>
+            
+            <!-- Formulário de Login -->
+            <div id="login-form" class="active">
+                <p class="subtitle">Login</p>
+                <form onsubmit="login(event)">
+                    <input type="email" id="login-email" placeholder="Email" required>
+                    <input type="password" id="login-password" placeholder="Senha" required>
+                    <button type="submit" class="btn-primary">Entrar</button>
+                </form>
+                <p class="text-center">
+                    <a href="#" onclick="showSignupForm()">Criar nova conta</a>
+                </p>
+            </div>
+
+            <!-- Formulário de Cadastro -->
+            <div id="signup-form" class="hidden">
+                <p class="subtitle">Criar Conta</p>
+                <p class="info-text">Use o mesmo email que você usou para comprar o curso.</p>
+                <form onsubmit="signup(event)">
+                    <input type="email" id="signup-email" placeholder="Email" required>
+                    <input type="password" id="signup-password" placeholder="Senha" required>
+                    <input type="password" id="confirm-password" placeholder="Confirme a senha" required>
+                    <button type="submit" class="btn-primary">Criar Conta</button>
+                </form>
+                <p class="text-center">
+                    <a href="#" onclick="showLoginForm()">Já tenho uma conta</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showLoginForm() {
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('login-form').classList.add('active');
+            document.getElementById('signup-form').classList.remove('active');
+            document.getElementById('signup-form').classList.add('hidden');
+        }
+
+        function showSignupForm() {
+            document.getElementById('login-form').classList.remove('active');
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('signup-form').classList.remove('hidden');
+            document.getElementById('signup-form').classList.add('active');
+        }
+
+        async function login(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            if (!email || !password) {
+                alert('Por favor, preencha todos os campos');
+                return;
+            }
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                if (!data.success) {
+                    alert('Email ou senha incorretos');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Erro ao fazer login');
+            }
+        }
+
+        async function signup(e) {
+            e.preventDefault();
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (!email || !password || !confirmPassword) {
+                alert('Por favor, preencha todos os campos');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                alert('As senhas não coincidem');
+                return;
+            }
+
+            try {
+                const response = await fetch('/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                if (!data.success) {
+                    alert(data.error || 'Erro ao criar conta');
+                } else {
+                    alert('Conta criada com sucesso!');
+                    showLoginForm();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Erro ao criar conta');
+            }
+        }
+    </script>
+</body>
+</html>
